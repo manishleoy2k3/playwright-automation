@@ -1,0 +1,30 @@
+name: Playwright Test on Self-Hosted Runner
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # allows manual triggering from GitHub UI
+
+jobs:
+  run-playwright-test:
+    name: Run Playwright Test
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright Browsers
+        run: npx playwright install
+
+      - name: Run Playwright Test
+        run: npm run test
