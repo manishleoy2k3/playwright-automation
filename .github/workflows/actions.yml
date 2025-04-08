@@ -9,6 +9,7 @@ on:
 jobs:
   run-playwright-test:
     name: Run Playwright Test
+    timeout-minutes: 60
     runs-on: self-hosted
 
     steps:
