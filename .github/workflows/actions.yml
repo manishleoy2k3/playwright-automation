@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # allows manual triggering from GitHub UI
+  workflow_dispatch:
 
 jobs:
   run-playwright-test:
@@ -24,10 +24,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Use local Playwright browsers
-        run: |
-          export PLAYWRIGHT_BROWSERS_PATH=0
-          npx playwright install
+      #  REMOVED this step, as it is unnecessary and triggers re-download
+      # - name: Use local Playwright browsers
+      #   run: |
+      #     export PLAYWRIGHT_BROWSERS_PATH=0
+      #     npx playwright install
 
       - name: Run Playwright Test
         run: npm run test
