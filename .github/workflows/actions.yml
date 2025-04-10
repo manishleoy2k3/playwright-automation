@@ -32,3 +32,9 @@ jobs:
 
       - name: Run Playwright Test
         run: npm run test
+
+      - name: Debug browser path
+        run: |
+          echo "Using local browsers from: $PLAYWRIGHT_BROWSERS_PATH"
+          ls node_modules/playwright-core/.local-browsers/
+      
