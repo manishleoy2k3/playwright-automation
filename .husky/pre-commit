@@ -1,0 +1,110 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+echo "================================"
+
+# Initialize error tracking
+ERRORS_FOUND=0
+ERROR_SUMMARY=""
+FAILED_CHECKS=""
+
+# Function to add error to summary
+add_error() {
+  local check_name="$1"
+  local file_list="$2"
+  ERROR_SUMMARY="${ERROR_SUMMARY}\n🚨 ${check_name}:"
+  ERROR_SUMMARY="${ERROR_SUMMARY}\n${file_list}"
+  ERROR_SUMMARY="${ERROR_SUMMARY}\n"
+  FAILED_CHECKS="${FAILED_CHECKS} ${check_name}"
+}
+
+# Run TypeScript type checking
+echo "📋 Checking TypeScript types..."
+if ! npm run type-check > /tmp/tsc_output.log 2>&1; then
+  ERRORS_FOUND=$((ERRORS_FOUND + 1))
+  # Extract file paths from TypeScript errors and count
+  TS_COUNT=$(grep -c "error TS" /tmp/tsc_output.log 2>/dev/null || echo "0")
+  TS_FILES=$(grep -E "\.ts\(" /tmp/tsc_output.log | cut -d'(' -f1 | sort -u | sed 's/^/   📄 file:\/\//' || echo "   📄 Check /tmp/tsc_output.log for details")
+  TS_SUMMARY="   🔍 ${TS_COUNT} TypeScript errors found"
+  add_error "TypeScript Compilation" "${TS_SUMMARY}\n${TS_FILES}"
+fi
+
+# Run ESLint
+echo "🔍 Running ESLint..."
+if ! npm run lint > /tmp/eslint_output.log 2>&1; then
+  ERRORS_FOUND=$((ERRORS_FOUND + 1))
+  
+  # Count errors and warnings from the actual eslint lines (not npm output)
+  ERROR_COUNT=$(grep -E "^\s+[0-9]+:[0-9]+\s+error" /tmp/eslint_output.log | wc -l | tr -d ' ')
+  WARNING_COUNT=$(grep -E "^\s+[0-9]+:[0-9]+\s+warning" /tmp/eslint_output.log | wc -l | tr -d ' ')
+  
+  # Extract detailed error information
+  ESLINT_DETAILS=""
+  if [ "$ERROR_COUNT" -gt "0" ]; then
+    # Process file by file to get errors with full context
+    CURRENT_FILE=""
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^/.* ]]; then
+        # This is a file path line
+        CURRENT_FILE="$line"
+      elif [[ "$line" =~ ^[[:space:]]+[0-9]+:[0-9]+[[:space:]]+error ]] && [ -n "$CURRENT_FILE" ]; then
+        # This is an error line - extract details
+        LINE_COL=$(echo "$line" | awk '{print $1}')
+        ERROR_MSG=$(echo "$line" | sed -E 's/^[[:space:]]*[0-9]+:[0-9]+[[:space:]]+error[[:space:]]+//')
+        ESLINT_DETAILS="${ESLINT_DETAILS}\n   📄 file://${CURRENT_FILE}:${LINE_COL} - ${ERROR_MSG}"
+      fi
+    done < /tmp/eslint_output.log
+  fi
+  
+  # If no errors found through parsing, show a fallback message
+  if [ -z "$ESLINT_DETAILS" ] && [ "$ERROR_COUNT" -gt "0" ]; then
+    ESLINT_DETAILS="\n   📄 Run 'npm run lint' to see detailed error locations"
+  fi
+  
+  ESLINT_SUMMARY="   🚨 ${ERROR_COUNT} errors, ${WARNING_COUNT} warnings found"
+  add_error "ESLint Issues" "${ESLINT_SUMMARY}${ESLINT_DETAILS}"
+fi
+
+# Run Prettier check
+echo "🎨 Checking code formatting..."
+if ! npm run format:check > /tmp/prettier_output.log 2>&1; then
+  ERRORS_FOUND=$((ERRORS_FOUND + 1))
+  # Extract file paths from Prettier output and count
+  PRETTIER_COUNT=$(grep -c "^\[warn\]" /tmp/prettier_output.log 2>/dev/null || echo "0")
+  PRETTIER_FILES=$(grep -E "^\[warn\]" /tmp/prettier_output.log | sed 's/^\[warn\] /   📄 file:\/\//' | head -10)
+  if [ "$PRETTIER_COUNT" -gt 10 ]; then
+    PRETTIER_FILES="${PRETTIER_FILES}\n   📄 ... and $((PRETTIER_COUNT - 10)) more files"
+  fi
+  PRETTIER_SUMMARY="   🎨 ${PRETTIER_COUNT} files need formatting"
+  add_error "Code Formatting" "${PRETTIER_SUMMARY}\n${PRETTIER_FILES}"
+fi
+
+echo "================================"
+
+# Show results
+if [ $ERRORS_FOUND -eq 0 ]; then
+  echo "✅ All pre-commit checks passed successfully!"
+  echo ""
+  echo "🎉 Ready to commit!"
+else
+  echo "❌ Pre-commit checks failed!"
+  echo ""
+  echo "📋 SUMMARY OF ISSUES BLOCKING COMMIT:"
+  echo "===================================="
+  printf "$ERROR_SUMMARY"
+  echo ""
+  echo "🛠️  QUICK FIXES:"
+  echo "   • Fix formatting:     npm run format"
+  echo "   • Fix lint issues:    npm run lint:fix"  
+  echo "   • Check types:        npm run type-check"
+  echo "   • Run all checks:     npm run precommit"
+  echo ""
+  echo "📁 WORKING DIRECTORY: $(pwd)"
+  echo "🔗 TIP: Click on file:// links above to open files directly"
+  echo ""
+  echo "Failed checks:${FAILED_CHECKS}"
+  echo ""
+  echo "🚫 Commit blocked until all issues are resolved."
+  exit 1
+fi
