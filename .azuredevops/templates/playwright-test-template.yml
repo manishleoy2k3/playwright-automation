@@ -1,0 +1,80 @@
+parameters:
+  browser:
+  environment:
+  country:
+  reportTitle:
+  testDir: 'tests'
+
+steps:
+- task: UseNode@1
+  inputs:
+    version: '20.x'
+  displayName: 'Install Node.js'
+
+- script: npm ci
+  displayName: 'npm ci'
+  
+- script: |
+    case '${{ parameters.browser }}' in
+      chromium|mobile_Chrome)
+        browser='chromium'
+        ;;
+      firefox)
+        browser='firefox'
+        ;;
+      webkit|mobile_Safari)
+        browser='webkit'
+        ;;
+      *)
+        echo "Unsupported browser project: ${{ parameters.browser }}"
+        exit 1
+        ;;
+    esac
+
+    # Linux dependencies must be provisioned in the self-hosted agent image.
+    # --with-deps attempts to elevate with sudo/su, which is not available to
+    # the unprivileged Azure Pipelines agent user.
+    npx playwright install "$browser"
+  displayName: 'Install required Playwright browser'
+  
+- script: npx playwright test ${{ parameters.testDir }} --project=${{ parameters.browser }}
+  displayName: 'Run Playwright tests'
+  env:
+    CI: 'true'
+    SITE_ENV: ${{ parameters.environment }}
+    SITE_COUNTRY: ${{ parameters.country }}
+    TEST_MANAGEMENT_TOKEN: $(TEST_MANAGEMENT_TOKEN)
+    TEST_USER_PASSWORD: $(TEST_USER_PASSWORD)
+    COMMERCETOOLS_BASIC_AUTH: $(COMMERCETOOLS_BASIC_AUTH)
+    STOREFRONT_USERNAME: $(STOREFRONT_USERNAME)
+    STOREFRONT_DEV_PASSWORD: $(STOREFRONT_DEV_PASSWORD)
+    STOREFRONT_STG_PASSWORD: $(STOREFRONT_STG_PASSWORD)
+    # AZUREPWDEBUG: '1' - uncomment for verbose logging of Azure Reporter
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Allure results'
+  continueOnError: true
+  inputs:
+    targetPath: allure-results
+    artifact: allure-results-${{ parameters.country }}
+    publishLocation: 'pipeline'
+  condition: succeededOrFailed()
+
+- task: PublishAllureReport@1
+  displayName: "Publish Allure report"
+  continueOnError: true
+  inputs:
+    testResultsDir: allure-results
+    includeAttachments: true
+    reportName: '${{ parameters.reportTitle }}'
+  condition: succeededOrFailed()
+
+- task: PublishTestResults@2
+  displayName: 'Publish Test Results'
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/junit-results.xml'
+    testRunTitle: '${{ parameters.reportTitle }}'
+    mergeTestResults: true
+    failTaskOnFailedTests: true
+  condition: succeededOrFailed()
