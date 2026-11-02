@@ -1,0 +1,50 @@
+  trigger: none
+
+variables:
+  - group: HWS-UI-TESTS
+
+parameters:
+  - name: browser
+    displayName: 'Browser'
+    type: string
+    default: 'chromium'
+    values:
+      - chromium
+      - firefox
+      - webkit
+      - mobile_Chrome
+      - mobile_Safari
+  - name: environment
+    displayName: 'Environment'
+    type: string
+    default: 'stg'
+    values:
+      - dev
+      - stg
+      - prd
+  - name: countries
+    displayName: 'Countries to test (comma-separated, e.g. "de,fr,it")'
+    type: string
+    default: 'de'
+
+name: Regression-Tests-${{ parameters.countries }}-$(Date:yyyyMMdd)-$(Build.SourceBranchName)
+
+stages:
+- stage: E2E
+  displayName: "Run Playwright Regression tests"
+  jobs:
+    - ${{ each country in split(parameters.countries, ',') }}:
+      - job: Regression_${{ country }}
+        displayName: "Regression Tests - ${{ country }}"
+        pool:
+          name: hCRE-Scaling-Agents
+          demands: AGENT_ENVIRONMENT_LABEL -equals stg
+        steps:
+        - template: ../templates/playwright-test-template.yml
+          parameters:
+            browser: ${{ parameters.browser }}
+            environment: ${{ parameters.environment }}
+            country: ${{ country }}
+            testSuite: 'regression'
+            testDir: 'tests/features'
+            reportTitle: 'Regression Test Report - ${{ country }}'
