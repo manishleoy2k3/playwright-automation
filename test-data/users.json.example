@@ -1,1 +1,19 @@
-//test
+{
+  "_comment": "Template is used. Credentials are now generated in code: email=testuser.{country}@yopmail.com, password from TEST_USER_PASSWORD env variable.",
+  "_instructions": "Set TEST_USER_PASSWORD in .env for local runs and in pipeline variables for CI/CD.",
+  
+  "uk": [
+    {
+      "email": "your-test-user@example.com",
+      "password": "YourUKPassword789!",
+      "country": "uk"
+    }
+  ], 
+  "it": [
+    {
+      "email": "your-it-test-user@example.com",
+      "password": "YourITPassword678!",
+      "country": "it"
+    }
+  ]
+}
