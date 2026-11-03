@@ -42,8 +42,8 @@
   "author": "Test Automation Engineer",
   "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "^9.39.0",
-    "@playwright/test": "^1.40.0",
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.64.1",
     "@types/dotenv": "^6.1.1",
     "@types/node": "^20.8.0",
     "@typescript-eslint/eslint-plugin": "^8.20.0",
@@ -51,14 +51,16 @@
     "allure-commandline": "^2.24.1",
     "allure-playwright": "^2.8.1",
     "dotenv": "^17.2.3",
-    "eslint": "^9.0.0",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-playwright": "^1.8.0",
-    "globals": "^15.13.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^15.15.0",
     "husky": "^8.0.3",
     "lint-staged": "^14.0.1",
     "prettier": "^3.0.3",
-    "typescript": "^6.0.0"
+    "typescript": "^6.0.0",
+    "typescript-eslint": "^8.72.1"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -74,7 +76,7 @@
     ]
   },
   "dependencies": {
-    "exceljs": "^4.4.0",
-    "@alex_neo/playwright-azure-reporter": "^1.19.0"
+    "@alex_neo/playwright-azure-reporter": "^1.19.0",
+    "exceljs": "^4.4.0"
   }
 }
