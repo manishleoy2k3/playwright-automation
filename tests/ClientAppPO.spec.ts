@@ -1,6 +1,6 @@
 
  import {test, expect} from '@playwright/test';
- import {customTest} from '../utils_ts/test-base';
+ import {customTest} from '../src/utils/test-base';
 
 import {POManager} from '../pageobjects_ts/POManager';
 
